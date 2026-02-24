@@ -1,0 +1,12 @@
+{
+  name ai-to-docx-converter,
+  version 1.0.0,
+  description Convert AI text to DOCX with Pandoc,
+  main server.js,
+  scripts {
+    start node server.js
+  },
+  engines {
+    node 16.x
+  }
+}

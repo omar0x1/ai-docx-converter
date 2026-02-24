@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI → DOCX | Convert AI Text to Word</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#18181f;--surface3:#1e1e28;
+  --border:rgba(255,255,255,.07);--border-hi:rgba(255,255,255,.14);
+  --text:#f0f0f5;--muted:#8888a0;--muted2:#555568;
+  --accent:#6c63ff;--accent-hi:#8b85ff;--accent2:#ff6584;--accent3:#43e97b;
+  --math-bg:rgba(108,99,255,.12);--math-color:#b8b0ff;
+  --code-bg:rgba(0,0,0,.35);--shadow:0 40px 80px rgba(0,0,0,.5);
+}
+[data-theme="light"]{
+  --bg:#f4f4f8;--surface:#fff;--surface2:#f0f0f6;--surface3:#e8e8f2;
+  --border:rgba(0,0,0,.08);--border-hi:rgba(0,0,0,.15);
+  --text:#1a1a2e;--muted:#666688;--muted2:#9999bb;
+  --math-bg:rgba(108,99,255,.08);--math-color:#4a42cc;
+  --code-bg:rgba(0,0,0,.05);--shadow:0 20px 60px rgba(0,0,0,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+.blob{position:fixed;border-radius:50%;filter:blur(130px);pointer-events:none;z-index:0;animation:drift 22s ease-in-out infinite alternate;}
+[data-theme="dark"] .blob{opacity:.12;}[data-theme="light"] .blob{opacity:.04;}
+.blob-1{width:600px;height:600px;background:#6c63ff;top:-250px;left:-200px;}
+.blob-2{width:400px;height:400px;background:#ff6584;bottom:-150px;right:-100px;animation-delay:-11s;}
+.blob-3{width:280px;height:280px;background:#43e97b;top:55%;left:55%;animation-delay:-6s;}
+@keyframes drift{from{transform:translate(0,0) scale(1);}to{transform:translate(40px,30px) scale(1.06);}}
+
+nav{position:sticky;top:0;z-index:200;backdrop-filter:blur(24px);background:rgba(10,10,15,.82);border-bottom:1px solid var(--border);padding:0 1.5rem;height:58px;display:flex;align-items:center;justify-content:space-between;transition:background .3s;}
+[data-theme="light"] nav{background:rgba(244,244,248,.88);}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:-.03em;display:flex;align-items:center;gap:.5rem;}
+.logo-pill{background:var(--accent);color:#fff;font-size:.6rem;padding:2px 7px;border-radius:100px;font-weight:600;letter-spacing:.06em;}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.theme-btn{width:36px;height:36px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.theme-btn:hover{border-color:var(--border-hi);color:var(--text);}
+
+.hero{position:relative;z-index:1;text-align:center;padding:4.5rem 1rem 2.5rem;max-width:680px;margin:0 auto;}
+.hero-tag{display:inline-flex;align-items:center;gap:.4rem;background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.22);border-radius:100px;padding:.28rem .9rem;font-size:.75rem;color:#a89fff;font-weight:500;letter-spacing:.04em;margin-bottom:1.25rem;}
+.hero h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.2rem,6vw,3.6rem);line-height:1.08;letter-spacing:-.04em;margin-bottom:1rem;}
+.hero h1 .hl{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{color:var(--muted);font-size:1rem;line-height:1.65;max-width:480px;margin:0 auto 1.5rem;}
+
+.server-banner{position:relative;z-index:1;max-width:920px;margin:0 auto 1.2rem;padding:0 1rem;}
+.banner{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.1rem;border-radius:12px;font-size:.82rem;border:1px solid;}
+.banner.info{background:rgba(108,99,255,.08);border-color:rgba(108,99,255,.2);color:var(--muted);}
+.banner.ok{background:rgba(67,233,123,.08);border-color:rgba(67,233,123,.22);color:#43e97b;}
+.banner.err{background:rgba(255,101,132,.08);border-color:rgba(255,101,132,.22);color:var(--accent2);}
+.banner-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot-pulse{animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.steps{position:relative;z-index:1;display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap;margin-bottom:2.5rem;}
+.step{display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.55rem .9rem;font-size:.78rem;color:var(--muted);}
+.step-n{width:18px;height:18px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:#fff;flex-shrink:0;}
+.step strong{color:var(--text);}
+
+.converter{position:relative;z-index:1;max-width:920px;margin:0 auto 3.5rem;padding:0 1rem;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);}
+.card-header{display:flex;align-items:center;gap:.6rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--border);background:var(--surface2);}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dr{background:#ff5f57;}.dy{background:#ffbd2e;}.dg{background:#28ca41;}
+.card-title{font-size:.78rem;color:var(--muted);font-weight:500;margin-left:.2rem;}
+.math-tip{margin-left:auto;font-size:.7rem;color:rgba(108,99,255,.7);background:rgba(108,99,255,.09);border-radius:6px;padding:2px 8px;font-style:italic;}
+
+.format-bar{padding:.5rem 1rem;border-bottom:1px solid var(--border);display:flex;gap:.28rem;flex-wrap:wrap;align-items:center;background:var(--surface2);}
+.fmt-btn{background:transparent;border:1px solid transparent;border-radius:6px;color:var(--muted);font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;padding:.22rem .5rem;transition:all .15s;min-width:28px;white-space:nowrap;}
+.fmt-btn:hover{border-color:var(--border);color:var(--text);background:var(--surface3);}
+.fmt-sep{width:1px;height:16px;background:var(--border);margin:0 .15rem;}
+
+.editor-area{display:grid;grid-template-columns:1fr 1fr;min-height:400px;}
+@media(max-width:640px){.editor-area{grid-template-columns:1fr;}}
+.pane{display:flex;flex-direction:column;}
+.pane:first-child{border-right:1px solid var(--border);}
+.pane-header{padding:.55rem 1rem;font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;}
+.stats{display:flex;gap:.6rem;font-size:.68rem;font-weight:400;flex-wrap:wrap;}
+.stat{color:var(--muted2);}.stat span{color:var(--muted);font-weight:500;}
+textarea{flex:1;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.875rem;line-height:1.8;padding:1rem;min-height:330px;}
+textarea::placeholder{color:var(--muted2);}
+
+#preview-pane{flex:1;padding:1rem 1.2rem;overflow-y:auto;min-height:330px;font-size:.875rem;line-height:1.8;}
+#preview-pane h1,#preview-pane h2,#preview-pane h3,#preview-pane h4{font-family:'Syne',sans-serif;margin:1em 0 .3em;color:var(--text);}
+#preview-pane h1{font-size:1.5rem;}#preview-pane h2{font-size:1.2rem;}#preview-pane h3{font-size:1rem;}
+#preview-pane p{margin-bottom:.55em;color:var(--muted);}
+#preview-pane strong{color:var(--text);font-weight:600;}
+#preview-pane em{font-style:italic;}
+#preview-pane s{text-decoration:line-through;color:var(--muted2);}
+#preview-pane code{background:var(--math-bg);border:1px solid rgba(108,99,255,.18);padding:1px 5px;border-radius:4px;font-size:.8em;font-family:'Courier New',monospace;color:var(--math-color);}
+#preview-pane pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:.85rem;overflow-x:auto;margin:.6em 0;}
+#preview-pane pre code{background:none;border:none;padding:0;font-size:.8rem;color:var(--accent3);}
+#preview-pane ul,#preview-pane ol{margin:.3em 0 .6em 1.4em;color:var(--muted);}
+#preview-pane li{margin-bottom:.2em;}
+#preview-pane blockquote{border-left:3px solid var(--accent);padding-left:.85rem;color:var(--muted);font-style:italic;margin:.5em 0;}
+#preview-pane table{width:100%;border-collapse:collapse;margin:.6em 0;font-size:.82rem;}
+#preview-pane th,#preview-pane td{border:1px solid var(--border);padding:.4em .75em;}
+#preview-pane th{background:var(--surface2);font-weight:600;color:var(--text);}
+#preview-pane hr{border:none;border-top:1px solid var(--border);margin:.8em 0;}
+#preview-pane .katex-block-wrap{display:block;margin:.8em 0;padding:.6em 1em;background:var(--math-bg);border-radius:8px;border-left:3px solid var(--accent);overflow-x:auto;text-align:center;}
+
+.empty-state{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;color:var(--muted2);font-size:.8rem;text-align:center;padding:2rem;}
+
+.card-footer{padding:.85rem 1.25rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;background:var(--surface2);}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;border:none;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover:not(:disabled){border-color:var(--border-hi);color:var(--text);}
+.btn-accent{background:var(--accent);color:#fff;box-shadow:0 0 18px rgba(108,99,255,.35);}
+.btn-accent:hover:not(:disabled){background:var(--accent-hi);transform:translateY(-1px);}
+.btn-green{background:linear-gradient(135deg,#43e97b,#38f9d7);color:#0a2010;font-weight:600;}
+.btn-green:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 0 22px rgba(67,233,123,.4);}
+.btn-red{background:rgba(255,101,132,.12);border:1px solid rgba(255,101,132,.25);color:var(--accent2);}
+.btn-red:hover:not(:disabled){background:rgba(255,101,132,.22);}
+.status-pill{margin-left:auto;font-size:.72rem;color:var(--muted);background:var(--surface3);border-radius:100px;padding:.2rem .7rem;transition:all .3s;}
+
+.sample-btn{background:none;border:none;color:var(--accent);font-family:inherit;font-size:.68rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:0;}
+.sample-btn:hover{color:var(--accent-hi);}
+
+.toast{position:fixed;bottom:1.75rem;right:1.75rem;z-index:999;background:var(--surface2);border:1px solid var(--border-hi);border-radius:12px;padding:.65rem 1.1rem;font-size:.82rem;color:var(--text);display:flex;align-items:center;gap:.5rem;box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(80px) scale(.95);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+.toast.show{transform:translateY(0) scale(1);opacity:1;}
+.toast-dot{width:7px;height:7px;border-radius:50%;background:var(--accent3);flex-shrink:0;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<nav>
+  <div class="logo">AI → DOCX <span class="logo-pill">PANDOC</span></div>
+  <div class="nav-right">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">✦ ChatGPT · Claude · DeepSeek · Gemini · Perplexity</div>
+  <h1>Convert <span class="hl">AI Output</span><br>to Word DOCX</h1>
+  <p class="hero-sub">Paste text from any AI assistant. Get a perfectly formatted .docx with real Word-native math equations, code, tables, and more.</p>
+</div>
+
+<div class="server-banner">
+  <div class="banner info" id="server-banner">
+    <div class="banner-dot dot-pulse" id="banner-dot" style="background:var(--muted)"></div>
+    <span id="banner-msg">Checking server connection…</span>
+  </div>
+</div>
+
+<div class="steps">
+  <div class="step"><div class="step-n">1</div><strong>Copy</strong> AI text</div>
+  <div class="step"><div class="step-n">2</div><strong>Paste</strong> &amp; preview</div>
+  <div class="step"><div class="step-n">3</div><strong>Download</strong> DOCX</div>
+</div>
+
+<div class="converter">
+  <div class="card">
+    <div class="card-header">
+      <div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div>
+      <span class="card-title">AI Text → Word Converter (Pandoc engine)</span>
+      <span class="math-tip">Real Word math: $...$, $$...$$, \[...\], [...] blocks</span>
+    </div>
+
+    <div class="format-bar">
+      <button class="fmt-btn" title="Bold" onclick="wrap('**','**')"><b>B</b></button>
+      <button class="fmt-btn" title="Italic" onclick="wrap('*','*')"><i>I</i></button>
+      <button class="fmt-btn" title="Strikethrough" onclick="wrap('~~','~~')"><s>S</s></button>
+      <button class="fmt-btn" title="Inline code" onclick="wrap('`','`')">{ }</button>
+      <div class="fmt-sep"></div>
+      <button class="fmt-btn" onclick="line('# ')">H1</button>
+      <button class="fmt-btn" onclick="line('## ')">H2</button>
+      <button class="fmt-btn" onclick="line('### ')">H3</button>
+      <div class="fmt-sep"></div>
+      <button class="fmt-btn" onclick="line('- ')">• List</button>
+      <button class="fmt-btn" onclick="line('1. ')">1. List</button>
+      <button class="fmt-btn" onclick="line('> ')">❝</button>
+      <div class="fmt-sep"></div>
+      <button class="fmt-btn" onclick="wrap('$','$')">∑ Math</button>
+      <button class="fmt-btn" onclick="block('$$\n','\n$$')">∫∫ Block</button>
+      <button class="fmt-btn" onclick="block('```\n','\n```')">⌨ Code</button>
+    </div>
+
+    <div class="editor-area">
+      <div class="pane">
+        <div class="pane-header">
+          Input
+          <div class="stats">
+            <span class="stat">W:<span id="wc"> 0</span></span>
+            <span class="stat">C:<span id="cc"> 0</span></span>
+            <span class="stat">L:<span id="lc"> 0</span></span>
+            <button class="sample-btn" onclick="loadSample()">Load sample</button>
+          </div>
+        </div>
+        <textarea id="inp" placeholder="Paste AI text here…&#10;&#10;Math formats supported:&#10;• $inline$  and  $$display$$&#10;• \(inline\)  and  \[display\]&#10;• [ bare brackets ] on their own line" oninput="onInput()" onkeydown="onTab(event)"></textarea>
+      </div>
+      <div class="pane">
+        <div class="pane-header">
+          Live Preview
+          <div class="stats">
+            <button class="sample-btn" onclick="copyPlain()">Copy text</button>
+          </div>
+        </div>
+        <div id="preview-pane">
+          <div class="empty-state">
+            <svg width="38" height="38" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Preview appears here
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <button class="btn btn-red" onclick="clearAll()">✕ Clear</button>
+      <button class="btn btn-ghost" onclick="copyInput()">⎘ Copy Input</button>
+      <button class="btn btn-green" id="dl-btn" onclick="downloadDocx()">↓ Download DOCX</button>
+      <span class="status-pill" id="pill">Ready</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg">Done!</span></div>
+
+<script>
+const SERVER = 'http://127.0.0.1:7821';
+
+// ── Server health check ──
+async function checkServer() {
+  const banner = document.getElementById('server-banner');
+  const dot    = document.getElementById('banner-dot');
+  const msg    = document.getElementById('banner-msg');
+  const btn    = document.getElementById('dl-btn');
+  try {
+    const r = await fetch(SERVER, { method: 'GET', signal: AbortSignal.timeout(2000) });
+    if (r.ok) {
+      banner.className = 'banner ok';
+      dot.style.background = '#43e97b'; dot.className = 'banner-dot';
+      msg.textContent = '✅ Server connected — Pandoc engine ready. Math will render perfectly in Word.';
+      btn.disabled = false;
+      return true;
+    }
+  } catch(e) {}
+  banner.className = 'banner err';
+  dot.style.background = '#ff6584'; dot.className = 'banner-dot';
+  msg.innerHTML = '⚠️ Server not running. Start it: <code style="background:rgba(0,0,0,.2);padding:1px 6px;border-radius:4px">node server.js</code> in the converter folder, then refresh.';
+  btn.disabled = true;
+  return false;
+}
+checkServer();
+
+// ── Theme ──
+function toggleTheme(){
+  const d=document.documentElement,dk=d.getAttribute('data-theme')==='dark';
+  d.setAttribute('data-theme',dk?'light':'dark');
+  document.getElementById('theme-btn').textContent=dk?'☀️':'🌙';
+}
+
+// ── Toast ──
+function toast(msg,col){
+  const el=document.getElementById('toast');
+  el.querySelector('.toast-dot').style.background=col||'#43e97b';
+  document.getElementById('toast-msg').textContent=msg;
+  el.classList.add('show');clearTimeout(el._t);
+  el._t=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ── Stats ──
+function setStats(t){
+  const w=t.trim()?t.trim().split(/\s+/).length:0;
+  document.getElementById('wc').textContent=' '+w;
+  document.getElementById('cc').textContent=' '+t.length;
+  document.getElementById('lc').textContent=' '+t.split('\n').length;
+  document.getElementById('pill').textContent=w?w+' words':'Ready';
+}
+
+// ── Editor helpers ──
+function clearAll(){document.getElementById('inp').value='';onInput();toast('Cleared!','#ff6584');}
+function copyInput(){const t=document.getElementById('inp').value;if(!t)return toast('Nothing','#ff6584');navigator.clipboard.writeText(t).then(()=>toast('Copied!'));}
+function copyPlain(){navigator.clipboard.writeText(document.getElementById('preview-pane').innerText).then(()=>toast('Copied!'));}
+function wrap(a,b){
+  const ta=document.getElementById('inp'),s=ta.selectionStart,e=ta.selectionEnd;
+  ta.value=ta.value.slice(0,s)+a+ta.value.slice(s,e)+b+ta.value.slice(e);
+  ta.selectionStart=s+a.length;ta.selectionEnd=e+a.length;ta.focus();onInput();
+}
+function line(p){
+  const ta=document.getElementById('inp'),s=ta.selectionStart;
+  const ls=ta.value.lastIndexOf('\n',s-1)+1;
+  ta.value=ta.value.slice(0,ls)+p+ta.value.slice(ls);
+  ta.selectionStart=ta.selectionEnd=ls+p.length;ta.focus();onInput();
+}
+function block(a,b){
+  const ta=document.getElementById('inp'),s=ta.selectionStart,e=ta.selectionEnd;
+  const sel=ta.value.slice(s,e),ins='\n'+a+sel+b+'\n';
+  ta.value=ta.value.slice(0,s)+ins+ta.value.slice(e);
+  ta.selectionStart=s+a.length+1;ta.selectionEnd=s+a.length+1+sel.length;ta.focus();onInput();
+}
+function onTab(e){if(e.key==='Tab'){e.preventDefault();wrap('  ','');}}
+
+// ── Preview (KaTeX in browser) ──
+function rKatex(expr,disp){
+  try{return katex.renderToString(expr.trim(),{displayMode:disp,throwOnError:false,output:'html'});}
+  catch(e){return '<span style="color:#ff6584">[Math: '+expr+']</span>';}
+}
+function isMath(s){
+  return /[\\^_{}]|\\[a-zA-Z]|frac|sum|int|lim|sqrt|begin|vec|cdot|times|alpha|beta|gamma|sigma|nabla|partial|infty|approx|leq|geq|neq|matrix|pmatrix|bmatrix/.test(s)
+    ||/[+\-=×÷*\/]/.test(s)||/\d/.test(s)
+    ||/[a-zA-Z]\s*[+\-=*\/]/.test(s)||/[+\-=*\/]\s*[a-zA-Z]/.test(s);
+}
+
+function md2html(raw){
+  if(!raw.trim())return '';
+  const V=[];
+  const sv=(type,content)=>{V.push({type,content});return'\x02'+(V.length-1)+'\x02';};
+  let s=raw;
+  s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>sv('code',{lang:l||'text',code:c.trimEnd()}));
+  s=s.replace(/\\\[([\s\S]*?)\\\]/g,(_,e)=>sv('dmath',e.trim()));
+  s=s.replace(/\$\$([\s\S]*?)\$\$/g,(_,e)=>sv('dmath',e.trim()));
+  s=s.replace(/^[ \t]*\[\n([\s\S]*?)\n[ \t]*\][ \t]*$/gm,(_,e)=>sv('dmath',e.trim()));
+  s=s.replace(/^[ \t]*\[[ \t]*([^\]\n]{1,300})[ \t]*\][ \t]*$/gm,(_,e)=>{
+    const inner=e.trim();
+    if(inner&&!inner.startsWith('http')&&!_.includes('](')&&isMath(inner))return sv('dmath',inner);
+    return _;
+  });
+  s=s.replace(/\\\(((?:[^\\]|\\[^)])*?)\\\)/g,(_,e)=>sv('imath',e.trim()));
+  s=s.replace(/\$(?!\s)((?:[^$\n\\]|\\.)+?)(?<!\s)\$/g,(_,e)=>sv('imath',e.trim()));
+  s=s.replace(/`([^`\n]+?)`/g,(_,c)=>sv('ic',c));
+  s=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s=s.replace(/~~((?:[^\x02~]|\x02\d+\x02)+?)~~/g,'<s>$1</s>')
+     .replace(/\*\*\*((?:[^\x02*]|\x02\d+\x02)+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+     .replace(/\*\*((?:[^\x02*]|\x02\d+\x02)+?)\*\*/g,'<strong>$1</strong>')
+     .replace(/\*([^*\n\x02]+?)\*/g,'<em>$1</em>');
+  function ri(str){
+    return str.replace(/\x02(\d+)\x02/g,(_,i)=>{
+      const it=V[+i];if(!it)return'';
+      if(it.type==='imath')return'<span>'+rKatex(it.content,false)+'</span>';
+      if(it.type==='ic')return'<code>'+it.content+'</code>';
+      if(it.type==='dmath')return'<div class="katex-block-wrap">'+rKatex(it.content,true)+'</div>';
+      if(it.type==='code'){const ec=it.content.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');return'<pre><code>'+ec+'</code></pre>';}
+      return'';
+    });
+  }
+  const lines=s.split('\n'),out=[];let i=0;
+  while(i<lines.length){
+    const ln=lines[i],lt=ln.trim();
+    const vm=lt.match(/^\x02(\d+)\x02$/);
+    if(vm){
+      const it=V[+vm[1]];
+      if(!it){i++;continue;}
+      if(it.type==='code'){const ec=it.content.code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');out.push('<pre><code>'+ec+'</code></pre>');}
+      else if(it.type==='dmath')out.push('<div class="katex-block-wrap">'+rKatex(it.content,true)+'</div>');
+      else out.push(ri(lt));
+      i++;continue;
+    }
+    const hm=lt.match(/^(#{1,4}) (.+)/);
+    if(hm){out.push('<h'+hm[1].length+'>'+ri(hm[2])+'</h'+hm[1].length+'>');i++;continue;}
+    if(/^---+$/.test(lt)){out.push('<hr>');i++;continue;}
+    if(/^(&gt;|>) /.test(lt)){out.push('<blockquote>'+ri(lt.replace(/^(&gt;|>) /,''))+'</blockquote>');i++;continue;}
+    if(ln.includes('|')&&i+1<lines.length&&/^\|?[\s\-:|]+\|/.test(lines[i+1])){
+      const ths=ln.split('|').filter(c=>c.trim()).map(c=>'<th>'+ri(c.trim())+'</th>').join('');
+      i+=2;let rows='';
+      while(i<lines.length&&lines[i].includes('|')){
+        const tds=lines[i].split('|').filter(c=>c.trim()).map(c=>'<td>'+ri(c.trim())+'</td>').join('');
+        rows+='<tr>'+tds+'</tr>';i++;
+      }
+      out.push('<table><thead><tr>'+ths+'</tr></thead><tbody>'+rows+'</tbody></table>');continue;
+    }
+    if(/^[-*+] /.test(lt)){
+      let items='';
+      while(i<lines.length&&/^[-*+] /.test(lines[i].trim())){items+='<li>'+ri(lines[i].trim().slice(2))+'</li>';i++;}
+      out.push('<ul>'+items+'</ul>');continue;
+    }
+    if(/^\d+\. /.test(lt)){
+      let items='';
+      while(i<lines.length&&/^\d+\. /.test(lines[i].trim())){items+='<li>'+ri(lines[i].trim().replace(/^\d+\. /,''))+'</li>';i++;}
+      out.push('<ol>'+items+'</ol>');continue;
+    }
+    if(!lt){out.push('');i++;continue;}
+    out.push('<p>'+ri(ln)+'</p>');i++;
+  }
+  return out.join('\n');
+}
+
+function onInput(){
+  const text=document.getElementById('inp').value;
+  setStats(text);
+  const pane=document.getElementById('preview-pane');
+  if(!text.trim()){
+    pane.innerHTML='<div class="empty-state"><svg width="38" height="38" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Preview appears here</div>';
+    return;
+  }
+  pane.innerHTML=md2html(text);
+}
+
+// ── Download DOCX via Pandoc server ──
+async function downloadDocx(){
+  const text=document.getElementById('inp').value.trim();
+  if(!text){toast('⚠️ Nothing to convert','#ff6584');return;}
+
+  const pill=document.getElementById('pill');
+  const btn=document.getElementById('dl-btn');
+  pill.textContent='Converting…';
+  btn.disabled=true;
+
+  try{
+    const res=await fetch(SERVER+'/convert',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({markdown:text}),
+      signal:AbortSignal.timeout(30000),
+    });
+
+    if(!res.ok){
+      const err=await res.json().catch(()=>({error:'Server error '+res.status}));
+      throw new Error(err.error||'Conversion failed');
+    }
+
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='ai-output.docx';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    toast('✅ DOCX downloaded — perfect math in Word!');
+    pill.textContent='Downloaded ✓';
+  }catch(err){
+    console.error(err);
+    toast('❌ '+err.message,'#ff6584');
+    pill.textContent='Error';
+    // Re-check server
+    checkServer();
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+// ── Sample ──
+function loadSample(){
+  document.getElementById('inp').value=`# Mathematics and Code
+
+## 1. Basic Operations
+
+In mathematics, we define:
+
+$$a + b$$
+
+$$a \\times b$$
+
+$$\\frac{a}{b}$$
+
+## 2. Functions
+
+A quadratic function:
+
+$$f(x) = x^2 + 2x + 1$$
+
+If $x = 5$ then $f(5) = 5^2 + 2(5) + 1 = 36$
+
+## 3. Sequences
+
+A sequence $a_n = n^2$ for $n = 1,2,3,4,5$ gives $1, 4, 9, 16, 25$
+
+## 4. Calculus
+
+Derivative definition:
+
+$$f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}$$
+
+## 5. Gradient Descent
+
+Update rule:
+
+$$x_{new} = x_{old} - \\alpha f'(x)$$
+
+Where $\\alpha$ is the learning rate.
+
+## 6. Statistics
+
+Mean:
+
+$$\\mu = \\frac{1}{n} \\sum_{i=1}^{n} x_i$$
+
+Variance:
+
+$$\\sigma^2 = \\frac{1}{n} \\sum_{i=1}^{n} (x_i - \\mu)^2$$
+
+## 7. Neural Network
+
+Neuron output:
+
+$$z = w_1 x_1 + w_2 x_2 + b$$
+
+Sigmoid activation:
+
+$$\\sigma(z) = \\frac{1}{1 + e^{-z}}$$
+
+## Code Example
+
+\`\`\`python
+import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+x = np.array([1, 2])
+w = np.array([0.5, -0.3])
+b = 0.1
+z = np.dot(w, x) + b
+print(sigmoid(z))
+\`\`\`
+
+| Format | Example | Renders |
+|--------|---------|---------|
+| Inline | $x^2$ | ✅ |
+| Display | $$\\frac{a}{b}$$ | ✅ |
+| Bare brackets | [ a + b ] | ✅ |`;
+  onInput();
+}
+
+setStats('');
+</script>
+</body>
+</html>
